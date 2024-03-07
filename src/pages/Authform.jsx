@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { userActions } from "../store/reducers/userReducers";
 import { signup, signin } from "../services/user";
+import MainLayout from "../Components/MainLayout";
 //import MainLayout from "../Components/MainLayout";
 const Authform = () => {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ const Authform = () => {
     }
   };
   return (
+    <MainLayout>
 <section>
       <div className="fixed inset-0 flex rounded-lg justify-center items-center w-full overflow-auto bg-black/20 backdrop-blur-md shadow-2xl shadow-black">
         <div className="mt-8 sm:w-full rounded-lg max-w-lg w-full mx-6 font-sans sm:max-w-md  ">
@@ -173,6 +175,7 @@ const Authform = () => {
         </div>
       </div>
       </section>
+      </MainLayout>
   );
 };
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 // import { images } from "../../constants";
 // import Headers from "../../headers/header";
 import { motion } from "framer-motion";
@@ -10,6 +10,8 @@ import { IoMdArrowDropdown } from "react-icons/io";
 import { getUserSubmission } from "../../services/leaderboard";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+import MainLayout from "../../Components/MainLayout";
 const itemVariants = {
   open: {
     opacity: 1,
@@ -19,6 +21,7 @@ const itemVariants = {
   closed: { opacity: 0, y: 20, transition: { duration: 0.2 } },
 };
 const UserSubmission = () => {
+  const userState = useSelector((state)=>state.user)
   const [currentPage, setCurrentPage] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Default");
@@ -34,121 +37,35 @@ const UserSubmission = () => {
   const handlePrevPage = () => {
     setCurrentPage((prevPage) => prevPage - 1);
   };
-  const { data, isLoading, isError, error } = useQuery({
-    queryFn: () => getUserSubmission({}),
-    queryKey: ["board"],
+  const { data, isLoading, isError, error,refetch } = useQuery({
+    queryFn: () => getUserSubmission({username:userState?.userInfo?.user?.username}),
+    queryKey: ["usersubmissions"],
     onError: (error) => {
       toast.error(error.message);
       console.log(error);
     },
   });
-  console.log(data);
-  const UserData = [
-    {
-      matchID: "1",
-      matchBetween: "Mumbai Indians vs Chennai Super Kings",
-      predictedTeam: "Mumbai Indians",
-      pom: "Rohit Sharma",
-      mostRuns: "Suryakumar Yadav",
-      stats: "Win",
-      mostWickets: "Jasprit Bumrah",
-    },
-    {
-      matchID: "2",
-      matchBetween: "Royal Challengers Bangalore vs Kolkata Knight Riders",
-      predictedTeam: "Royal Challengers Bangalore",
-      pom: "Virat Kohli",
-      mostRuns: "Glenn Maxwell",
-      stats: "Win",
-      mostWickets: "Yuzvendra Chahal",
-    },
-    {
-      matchID: "3",
-      matchBetween: "Delhi Capitals vs Punjab Kings",
-      predictedTeam: "Delhi Capitals",
-      pom: "Rishabh Pant",
-      mostRuns: "Shikhar Dhawan",
-      stats: "Win",
-      mostWickets: "Kagiso Rabada",
-    },
-    {
-      matchID: "4",
-      matchBetween: "Rajasthan Royals vs Sunrisers Hyderabad",
-      predictedTeam: "Rajasthan Royals",
-      pom: "Sanju Samson",
-      mostRuns: "Sanju Samson",
-      stats: "Win",
-      mostWickets: "Chris Morris",
-    },
-    {
-      matchID: "5",
-      matchBetween: "Chennai Super Kings vs Kolkata Knight Riders",
-      predictedTeam: "Chennai Super Kings",
-      pom: "Ravindra Jadeja",
-      mostRuns: "Faf du Plessis",
-      stats: "Lost",
-      mostWickets: "Deepak Chahar",
-    },
-    {
-      matchID: "6",
-      matchBetween: "Mumbai Indians vs Delhi Capitals",
-      predictedTeam: "Mumbai Indians",
-      pom: "Ishan Kishan",
-      mostRuns: "Ishan Kishan",
-      stats: "Lost",
-      mostWickets: "Trent Boult",
-    },
-    {
-      matchID: "7",
-      matchBetween: "Punjab Kings vs Royal Challengers Bangalore",
-      predictedTeam: "Royal Challengers Bangalore",
-      pom: "AB de Villiers",
-      mostRuns: "KL Rahul",
-      stats: "Win",
-      mostWickets: "Harshal Patel",
-    },
-    {
-      matchID: "8",
-      matchBetween: "Sunrisers Hyderabad vs Rajasthan Royals",
-      predictedTeam: "Sunrisers Hyderabad",
-      pom: "David Warner",
-      mostRuns: "David Warner",
-      stats: "Lost",
-      mostWickets: "Rashid Khan",
-    },
-    {
-      matchID: "9",
-      matchBetween: "Kolkata Knight Riders vs Delhi Capitals",
-      predictedTeam: "Delhi Capitals",
-      pom: "Kagiso Rabada",
-      mostRuns: "Prithvi Shaw",
-      stats: "Win",
-      mostWickets: "Kagiso Rabada",
-    },
-    {
-      matchID: "10",
-      matchBetween: "Chennai Super Kings vs Mumbai Indians",
-      predictedTeam: "Chennai Super Kings",
-      pom: "MS Dhoni",
-      mostRuns: "Ambati Rayudu",
-      stats: "Win",
-      mostWickets: "Shardul Thakur",
-    },
-  ];
+  useEffect(()=>{
+    refetch()
+  },[isLoading])
+  console.log(userState.userInfo.username)
+  console.log(data?.submissions);
+  const jsondata = data?.submissions;
 
+  
   const recordsPerPage = 5;
-  const filteredData =
-    selectedOption === "Top 10"
-      ? UserData.slice(0, 3)
-      : selectedOption === "Correct"
-      ? UserData.filter((record) => record.stats === "Win")
-      : UserData;
+  // const filteredData =
+  //   selectedOption === "Top 5"
+  //     ? UserData.slice(0, 3)
+  //     : selectedOption === "Correct"
+  //     ? UserData.filter((record) => record.stats === "Win")
+  //     : UserData;
   // Calculate start and end index for pagination
 
   const startIndex = currentPage * recordsPerPage;
   const endIndex = startIndex + recordsPerPage;
   return (
-    <>
+    <MainLayout>
       <div className="flex flex-col my-auto mt-[100px]">
         {/* <Headers /> */}
         <div
@@ -166,88 +83,10 @@ const UserSubmission = () => {
             <div class="flex flex-row justify-start items-center text-center w-full mb-1 sm:mb-0">
               <h2 class="text-xl uppercase ml-2 font-bold">User Submissions</h2>
             </div>
-            <div className="absolute lg:right-[-47px] right-[-87px] xs:ml-[290px] sm:ml-[290px]  md:ml-[290px] top-0 py-8 mr-0 flex justify-between items-center">
-              <motion.nav
-                initial={false}
-                animate={isOpen ? "open" : "closed"}
-                onHoverStart={() => setIsOpen(true)}
-                onHoverEnd={() => setIsOpen(false)}
-                className="menu"
-              >
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="text-black"
-                >
-                  <p className="text-black  text-[18px] rounded-md px-3 flex flex-row">
-                    {selectedOption}{" "}
-                    <span>
-                      <IoMdArrowDropdown className="my-[1px]" size={20} />
-                    </span>
-                  </p>
-                  <motion.div
-                    variants={{
-                      open: { rotate: 180 },
-                      closed: { rotate: 0 },
-                    }}
-                    transition={{ duration: 0.2 }}
-                    style={{ originY: 0.55 }}
-                  ></motion.div>
-                </motion.button>
-                <motion.ul
-                  variants={{
-                    open: {
-                      clipPath: "inset(0% 0% 0% 0% round 10px)",
-                      transition: {
-                        type: "spring",
-                        bounce: 0,
-                        duration: 0.7,
-                        delayChildren: 0.3,
-                        staggerChildren: 0.05,
-                      },
-                    },
-                    closed: {
-                      clipPath: "inset(10% 50% 90% 50% round 10px)",
-                      transition: {
-                        type: "spring",
-                        bounce: 0,
-                        duration: 0.3,
-                      },
-                    },
-                  }}
-                  className="bg-black/60 text-white py-3  w-[110px] flex justify-center items-center right-0 ml-[2.8rem]"
-                  style={{
-                    pointerEvents: isOpen ? "auto " : "none",
-                    filter: "drop-shadow(1px 1px 1px #000000)",
-                  }}
-                >
-                  <motion.li
-                    variants={itemVariants}
-                    onClick={() => handleItemClick("Top 10")}
-                    className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
-                  >
-                    Top 3{" "}
-                  </motion.li>
-                  <motion.li
-                    variants={itemVariants}
-                    onClick={() => handleItemClick("Correct")}
-                    className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
-                  >
-                    Correct
-                  </motion.li>
-                  <motion.li
-                    variants={itemVariants}
-                    onClick={() => handleItemClick("Default")}
-                    className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
-                  >
-                    Default
-                  </motion.li>
-                </motion.ul>
-              </motion.nav>
-            </div>
+            
 
             <div class="flex justify-center items-center py-4 w-90 mt-7  mx-0 px-0">
-              <div class="flex items-center border-2 border-gray-200 shadow-2xl shadow-black overflow-auto scrollbar-hide rounded-lg">
+              <div class="flex items-center border-2 border-gray-200 shadow-2xl shadow-black scrollbar-hide rounded-lg">
                 <button
                   onClick={handlePrevPage}
                   disabled={currentPage === 0}
@@ -299,66 +138,106 @@ const UserSubmission = () => {
                   </thead>
 
                   <tbody className="w-full ">
-                    {filteredData
-                      .slice(startIndex, endIndex)
+                    {jsondata?.slice(startIndex, endIndex)
                       .map((record, index) => (
                         <tr
-                          className={`${
-                            record.stats === "Win"
-                              ? "text-green-500"
-                              : "text-red-500"
-                          } hover:bg-black/50 hover:cursor-pointer`}
+                          className={` hover:bg-black/50 hover:cursor-pointer`}
                         >
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
                             <span
-                              class={`${
-                                record.stats === "Win"
-                                  ? "text-green-900"
-                                  : "text-red-700"
-                              } relative inline-block px-5 py-1 font-semibold leading-tight`}
+                              class={` relative inline-block px-5 py-1 font-semibold leading-tight`}
                             >
                               <span
                                 aria-hidden="true"
-                                class={`${
-                                  record.stats === "Win"
-                                    ? "bg-green-200"
-                                    : "bg-red-200"
-                                } absolute inset-0 bg-green-200 rounded-full opacity-50`}
+                                class={` absolute inset-0  rounded-full opacity-50`}
                               ></span>
-                              <span class="relative">{record.matchID}</span>
+                              <span class="relative">{record.smatchID}</span>
                             </span>
                           </td>
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
                             <div class="flex justify-center items-center">
                               <div class="ml-3">
                                 <p class="text-gray-900 whitespace-no-wrap">
-                                  {record.matchBetween}
+                                  {record.match_teamA} vs {record.match_teamB}
                                 </p>
                               </div>
                             </div>
                           </td>
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
-                            <p class="text-gray-900 whitespace-no-wrap flex flex-row justify-center items-center">
-                              {record.predictedTeam}
-                              <span>
-                                <p></p>
-                              </span>
-                            </p>
+                          <span
+                              class={`${
+                                record.predictedteam === record.winner_team
+                                  ? "text-green-900"
+                                  : record.winner_team === null ? "text-black" : "text-red-700"
+                              } relative inline-block px-5 py-1 font-semibold leading-tight`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                class={`${
+                                  record.predictedteam === record.winner_team
+                                  ? "bg-green-200"
+                                  : record.winner_team === null ? "bg-white" : "bg-red-200"
+                                } absolute inset-0 bg-green-200 rounded-full opacity-50`}
+                              ></span>
+                              <span class="relative">{record.predictedteam}</span>
+                            </span>
                           </td>
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
-                            <p class="text-gray-900 whitespace-no-wrap text-center flex flex-row justify-center items-center">
-                              {record.pom}
-                            </p>
+                          <span
+                              class={`${
+                                record.predictedpom === record.playerofmatch
+                                ? "text-green-900"
+                                : record.playerofmatch === null ? "text-black" : "text-red-700"
+                              } relative inline-block px-5 py-1 font-semibold leading-tight`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                class={`${
+                                  record.predictedpom === record.playerofmatch
+                                    ? "bg-green-200"
+                                    : record.playerofmatch === null ? "bg-white" : "bg-red-200"
+                                } absolute inset-0 bg-green-200 rounded-full opacity-50`}
+                              ></span>
+                              <span class="relative">{record.predictedpom}</span>
+                            </span>
                           </td>
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
-                            <p class="text-gray-900 whitespace-no-wrap text-center flex flex-row justify-center items-center">
-                              {record.mostRuns}
-                            </p>
+                          <span
+                              class={`${
+                                record.predictedmr === record.mostrunsplayer
+                                  ? "text-green-900"
+                                  : record.mostrunsplayer !== null ? "text-red-700" : "text-black"
+                              } relative inline-block px-5 py-1 font-semibold leading-tight`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                class={`${
+                                  record.predictedmr === record.mostrunsplayer
+                                  ? "bg-green-200"
+                                  : record.mostrunsplayer === null ? "bg-white" : "bg-red-200"
+                                } absolute inset-0 bg-green-200 rounded-full opacity-50`}
+                              ></span>
+                              <span class="relative">{record.predictedmr}</span>
+                            </span>
                           </td>
                           <td class="px-5 py-5 text-sm bg-white border-b border-gray-200">
-                            <p class="text-gray-900 whitespace-no-wrap text-center flex flex-row justify-center items-center">
-                              {record.mostWickets}
-                            </p>
+                          <span
+                              class={`${
+                                record.predictedmwk === record.mostwickettaker
+                                ? "text-green-700"
+                                : record.mostwickettaker === null ? "text-black" : "text-red-700"
+                              } relative inline-block px-5 py-1 font-semibold leading-tight`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                class={`${
+                                  record.predictedmwk === record.mostwickettaker
+                                ? "bg-green-200"
+                                : record.mostwickettaker === null ? "bg-white" : "bg-red-200"
+                                } absolute inset-0 bg-green-200 rounded-full opacity-50`}
+                              ></span>
+                              <span class="relative">{record.predictedmwk}</span>
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -366,7 +245,7 @@ const UserSubmission = () => {
                 </table>
                 <button
                   onClick={handleNextPage}
-                  disabled={endIndex >= UserData.length}
+                  disabled={endIndex >= jsondata?.length}
                   className="cursor-pointer my-auto rounded-full bg-black/10 p-2 w-[55px] animate-pulse"
                 >
                   <FaArrowRight color="black" />
@@ -375,9 +254,9 @@ const UserSubmission = () => {
             </div>
           </div>
         </div>
-        ;
+        
       </div>
-    </>
+    </MainLayout>
   );
 };
 

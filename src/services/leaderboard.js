@@ -19,7 +19,7 @@ export const getLeaderBoard = async ({selected_leaderboard}) => {
     throw new Error(error.message);
   }
 };
-export const getLeaderBoard2 = async ({}) => {
+export const getLeaderBoard2 = async ({selected_leaderboard}) => {
     const config = {
       // Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -28,7 +28,7 @@ export const getLeaderBoard2 = async ({}) => {
       // console.log(user)
       const { data } = await axios.get(
       //   "http://localhost:8000/ipl2/leaderboard1/",
-      "http://localhost:8000/ipl2/leaderboard3?selected_leaderboard=1",
+      `http://localhost:8000/ipl2/leaderboard2?selected_leaderboard=${selected_leaderboard}`,
         config
       );
       return data;
@@ -40,14 +40,14 @@ export const getLeaderBoard2 = async ({}) => {
     }
   };
 
-export const getUserSubmission = async ({}) => {
+export const getUserSubmission = async ({username}) => {
     const config = {
       headers: {
         "Content-Type": "application/json",
       },
     };
     try {
-      const { data } = await axios.get("http://localhost:8000/ipl2/user_submissions/admin2/", config);
+      const { data } = await axios.get(`http://localhost:8000/ipl2/user_submissions/${username}/`, config);
       return data;
     } catch (error) {
       if (error.response && error.response.data.message)

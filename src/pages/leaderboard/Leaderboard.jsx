@@ -8,9 +8,10 @@ import { FaArrowRight } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
 // import MainLayout from "../../Components/MainLayout";
 import { useQuery } from "@tanstack/react-query";
-import { getLeaderBoard } from "../../services/leaderboard";
+import { getLeaderBoard, getLeaderBoard2 } from "../../services/leaderboard";
 import toast from "react-hot-toast";
 import {useSelector} from 'react-redux'
+import MainLayout from "../../Components/MainLayout";
 const itemVariants = {
   open: {
     opacity: 1,
@@ -21,6 +22,10 @@ const itemVariants = {
 };
 const Leaderboard = () => {
   const userState = useSelector((state)=>state.user)
+  const [filteredUserList, setFilteredUserList] = useState([]);
+  const [lid,setLid] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [Breadcrumbsdata, setBreadcrumbsdata] = useState([
     {
       name: "Home",
@@ -34,9 +39,23 @@ const Leaderboard = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Global");
-
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      setDebouncedSearchQuery(selectedOption);
+    }, 300); // Adjust debounce delay as needed (e.g., 500 milliseconds)
+    
+    return () => clearTimeout(debounceTimeout);
+  }, [selectedOption]);
   const handleItemClick = (option) => {
+    
+    const selectedLeaderboard = leaderboards.find((item) => item.leaderboardname === option);
+    if (!selectedLeaderboard) {
+      throw new Error("Selected leaderboard not found");
+    }
+
     setSelectedOption(option);
+    setLid(selectedLeaderboard.lid);
+    console.log(selectedLeaderboard.lid)
     setIsOpen(false); // Close the menu after selection, if desired
   };
   const handleNextPage = () => {
@@ -46,81 +65,68 @@ const Leaderboard = () => {
   const handlePrevPage = () => {
     setCurrentPage((prevPage) => prevPage - 1);
   };
-  const [searchQuery, setSearchQuery] = useState("");
-   // Add selectedOption as a dependency
-  useEffect(() => {
-    // Refetch data when selectedOption changes
-    refetch();
-  }, [selectedOption]);
-  const { data, isLoading, isError, error,refetchh } = useQuery({
-    queryFn: () => getLeaderBoard({selected_leaderboard:selectedOption}),
-    queryKey: ["board"],
-    onError: (error) => {
-      toast.error(error.message);
-      console.log(error);
-    },
-  });
-  const { data1, isLoadingg, isErrorr, errorr,refetch } = useQuery({
-    queryFn: () => getLeaderBoard(),
-    queryKey: ["board"],
-    onError: (error) => {
-      toast.error(error.message);
-      console.log(error);
-    },
-  });
- 
-  const LeaderboardData = data;
-  console.log(LeaderboardData);
-console.log(data1);
-const jsondata = data;
-const user_list = jsondata?.user_list;
-console.log(user_list);
-  // console.log(jsondata);
-  // jsondata.map((item) => console.log(item["fields"].name));
-  // const leaderboardData = [
-  //   {
-  //     rank: 1,
-  //     player: "Jean Marc",
-  //     level: 100,
-  //   },
-  //   {
-  //     rank: 2,
-  //     player: "Marcus coco",
-  //     level: 200,
-  //   },
-  //   {
-  //     rank: 3,
-  //     player: "Marcus coco",
-  //     level: 200,
-  //   },
-  //   {
-  //     rank: 4,
-  //     player: "Marcus coco",
-  //     level: 200,
-  //   },
-  //   {
-  //     rank: 5,
-  //     player: "Marcus coco",
-  //     level: 200,
-  //   },
-  //   {
-  //     rank: 6,
-  //     player: "Marcus coco",
-  //     level: 200,
-  //   },
-  //   // Add more data as needed
-  // ];
-  const handleSearchInputChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-  const recordsPerPage = 5;
-  
 
-  // Calculate start and end index for pagination
+   
+  useEffect(() => {
+    fetchData()
+    
+  }, [selectedOption,searchQuery,debouncedSearchQuery,userState.userInfo]);
+  const fetchData = () => {
+    if (userState.userInfo) {
+      refetchLeaderBoard2();
+    } else {
+      refetchLeaderBoard();
+    }
+  };
+  const { data, isLoading, isError, error, refetch: refetchLeaderBoard } = useQuery({
+    queryFn: () => getLeaderBoard({ selected_leaderboard: lid }),
+    queryKey: ["board"],
+    onError: (error) => {
+      toast.error(error.message);
+      console.log(error);
+    },
+  });
+  console.log(userState.userInfo)
+
+  const { data: data2, refetch: refetchLeaderBoard2 } = useQuery({
+    queryFn: () => getLeaderBoard2({selected_leaderboard:lid}),
+    queryKey: ["board2"],
+    onError: (error) => {
+      toast.error(error.message);
+      console.log(error);
+    },
+  });
+  console.log(selectedOption)
+  const leaderboards = (userState ? data2 : data)?.leaderboards || [];
+  const lidAndNameArray = leaderboards.map(item => [item.lid, item.leaderboardname]);
+  console.log(lidAndNameArray);
+
+  const LeaderboardData = userState ? data2 : data;
+  console.log(LeaderboardData);
+
+  const user_list = filteredUserList.length > 0 ? filteredUserList : LeaderboardData?.user_list || [];
+
+
+  const handleSearchInputChange = (event) => {
+    const value = event.target.value;
+    setSearchQuery(value);
+  
+    const filteredUserList = LeaderboardData?.user_list.filter((user) =>
+      user.username.toLowerCase().includes(value.toLowerCase())
+    );
+  
+    // Update the filtered user list based on the search query
+    setFilteredUserList(filteredUserList);
+  };
+
+
+  
+  const recordsPerPage = 5;
   const startIndex = currentPage * recordsPerPage;
   const endIndex = startIndex + recordsPerPage;
+  const currentPageUserList = user_list.slice(startIndex, endIndex);
   return (
-    // <MainLayout>
+    <MainLayout>
       <div className="flex flex-col mt-[100px] min-w-xl overflow-clip">
         {/* <Breadcrumbs
           data={Breadcrumbsdata}
@@ -130,6 +136,7 @@ console.log(user_list);
         <div
           className={`w-full my-0 lg:h-[160px] bg-cover bg-no-repeat border-t-2 md:h-[200px] h-[140px] border-b-2  flex flex-col justify-center items-center`}
         >
+          <button onClick={()=> fetchData()}></button>
           <p className="text-2xl font-bold mt-3 xs:mt-[1px] sm:mt-1 ml-3 lg:text-black lg:text-3xl text-center uppercase">
             Indian priemer Leaugue 2024
           </p>
@@ -211,20 +218,16 @@ console.log(user_list);
                       }}
                     >
                       
-                      <motion.li
-                        variants={itemVariants}
-                        onClick={() => handleItemClick("Global")}
-                        className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
-                      >
-                        Global{" "}
-                      </motion.li>
-                      <motion.li
-                        variants={itemVariants}
-                        onClick={() => handleItemClick("Weekly")}
-                        className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
-                      >
-                        Weekly{" "}
-                      </motion.li>
+                     {lidAndNameArray.map((item)=> (
+                       
+                     <motion.li
+                       variants={itemVariants}
+                       onClick={() => handleItemClick(item[1])}
+                       className="cursor-pointer font-medium text-md hover:text-gray-400 hover:animate-pulse"
+                     >
+                       {item[1]}
+                     </motion.li>
+                     ))}
                     </motion.ul>
                   </motion.nav>
                 </div>
@@ -265,7 +268,7 @@ console.log(user_list);
                   </thead>
 
                   <tbody className=" p-7">
-                    {user_list && user_list
+                    {currentPageUserList && currentPageUserList
                       .map((record, index) => (
                         <tr className="" key={index}>
                           <td class="px-5 py-8 text-sm bg-white border-b flex items-center justify-center h-auto border-gray-200">
@@ -305,9 +308,9 @@ console.log(user_list);
             </div>
           </div>
         </div>
-        ;
+        
       </div>
-    // </MainLayout>
+  </MainLayout>
   );
 };
 

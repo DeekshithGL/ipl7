@@ -5,72 +5,28 @@ import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeIn, slideIn, zoomIn } from "../../utils/motion";
-// import { SectionWrapper } from "../../hoc";
+ import { SectionWrapper } from "../../hoc";
+ import { useSelector } from "react-redux";
 // import CTA from "../../Components/CTA";
 import { images } from "../../constants";
 import toast from "react-hot-toast";
-// import MainLayout from "../../Components/MainLayout";
+import MainLayout from "../../Components/MainLayout";
 import { predictMatch } from "../../services/fixtures";
 import { useQuery } from "@tanstack/react-query";
 import { getMatchDetails } from "../../services/fixtures";
+import {teams} from "../../constants";
+import { getMatchDetailss } from "../../services/fixtures";
 const PredictMatch = () => {
-  const players = [
-    "Faf du Plessis (SA)",
-    "Virat Kohli",
-    "Rajat Patidar",
-    "Suyash Prabhudessai",
-    "Saurav Chauhan",
-    "Mahipal Lomror",
-    "Glenn Maxwell (AUS)",
-    "Manoj Bhandage",
-    "Tom Curran (ENG)",
-    "Swapnil Singh",
-    "Will Jacks (ENG)",
-    "Cameron Green (AUS)",
-  ];
-  const match = {
-    matchID: 1,
-    matchdate: "2024-04-01",
-    matchtime: "19:30:00",
-    teamA: "Mumbai Indians",
-    teamAno: 1,
-    teamB: "Chennai Super Kings",
-    teamBno: 2,
-    status: 1,
-    winnerteam: "Mumbai Indians",
-    winnerteamno: 1,
-    playerofmatch: "Rohit Sharma",
-    playerofmatchID: 2,
-    mostrunsplayer: "Suryakumar Yadav",
-    mostrunsplayerID: 3,
-    mostwickettaker: "Jasprit Bumrah",
-    mostwickettakerID: 4,
-    location: "Wankhade",
-  };
+  const userState = useSelector((state)=>state.user)
   const [completed, isCompleted] = useState(false);
-  const date = new Date();
-  let day = date.getDate();
-  let month = date.getMonth() + 1;
-  let year = date.getFullYear();
+  const [current,setCurrent] = useState(false);
 
-  // This arrangement can be altered based on how we want the date's format to appear.
-  let currentDate = `${year}-${month}-${day}`;
-  console.log(currentDate); // "17-6-2022"
-  useEffect(() => {
-    compareDates(currentDate, match.matchdate);
-  }, []);
-  const compareDates = (d1, d2) => {
-    let date1 = new Date(d1).getTime();
-    let date2 = new Date(d2).getTime();
-    console.log(date1);
-    console.log(date2);
-    if (date1 < date2) {
-      isCompleted(false);
-    } else if (date1 > date2) {
-      isCompleted(true);
-    }
-  };
+
+
   
+  const { matchId } = useParams();
+  const parsedMatchId = parseInt(matchId);
+  console.log(parsedMatchId);
 
   const [Breadcrumbsdata, setBreadcrumbsdata] = useState([
     {
@@ -83,7 +39,7 @@ const PredictMatch = () => {
     },
     {
       name: "1",
-      link: `/${match.matchID}`,
+      link: `/${matchId}/`,
     },
   ]);
   const teamImages = {
@@ -111,22 +67,82 @@ const PredictMatch = () => {
     "Gujarat Titans": "#008000", // Green
   };
 
-  const match_id = useParams();
-  const { data, isSuccess, isLoading1, isError } = useQuery({
-    queryFn: () => getMatchDetails({ match_id }),
+
+ 
+  const { data, isSuccess, isLoading: isLoading1, isError, refetch } = useQuery({
+    queryFn: () => {
+      // if (status === '0') {
+        return getMatchDetails(parsedMatchId);
+      // } else {
+      //   return getMatchDetailss(parsedMatchId);
+      // }
+    },
     onError: (error) => console.log(error),
-    queryKey: ["match", match_id],
+    queryKey: ["match", parsedMatchId],
   });
-  console.log(data)
-  console.log(data.data["players"]);
-  const playerss = data.data["players"];
-  const team_a =data.data["team_A"]
-  const team_b = data.data["team_B"]
+  useEffect(() => {
+    refetch();
+  }, []);
+  useEffect(() => {
+    if(data?.match_status === 1){
+      isCompleted(true)
+    } else {
+      isCompleted(false)
+    }
+  }, [isLoading1,data]);
+  console.log(data?.match_status)
+  console.log(completed)
+
+   
+  console.log(data ? data : null)
+  console.log(data ? data["players"] : null);
+  const playerss = data ? data["players"] : null;
+  const team_a = data ? data["team_A"] : null;
+  const team_b = data ? data["team_B"] : null;
+  const batters = data ? data["batsmen"] : null;
+  const bowlers = data ? data["bowlers"] : null;
+  console.log(team_a)
+  const teamByName = teams[team_a?.teamshortform?.toLowerCase()]
+  console.log(teamByName);
+  const teamBByName = teams[team_b?.teamshortform?.toLowerCase()]
+  console.log(teamBByName);
 
   console.log(playerss)
-  const { mutate, isLoading } = useMutation({
-    mutationFn: ({ match_id, formData }) => {
-      return predictMatch({ match_id, formData });
+  const currentDate = new Date();
+
+  const matchTimeParts = data ? data?.match_time?.split(":") : null; // Split match time into hours and minutes
+  const matchHours = matchTimeParts ? parseInt(matchTimeParts[0], 10) : 0; // Check if matchTimeParts is not null
+  const matchMinutes = matchTimeParts ? parseInt(matchTimeParts[1], 10) : 0; 
+  const matchTime = matchTimeParts ? new Date(currentDate).setHours(matchHours, matchMinutes, 0, 0) : 0; 
+
+  const currentTime = currentDate.getTime();
+  console.log(currentTime);
+  
+  
+  // Compare current time with match time and check if it's before 12 AM
+  if (currentTime > matchTime && currentTime < new Date(currentDate).setHours(0, 0, 0, 0)) {
+   setCurrent(true)
+  }
+  
+  console.log(current);
+  
+  const { mutate, isLoading: isLoading2 } = useMutation({
+    mutationFn: ({
+      predicted_winner_team,
+      predicted_player_of_the_match,
+      predicted_most_runs_scorer,
+      predicted_most_wicket_taker,
+      username,
+      match_id
+    }) => {
+      return predictMatch({
+        predicted_winner_team,
+        predicted_player_of_the_match,
+        predicted_most_runs_scorer,
+        predicted_most_wicket_taker,
+        username,
+        match_id
+      });
     },
     onSuccess: (data) => {
       toast.success("Success");
@@ -135,7 +151,6 @@ const PredictMatch = () => {
       console.log(error.message);
     },
   });
-  
   const {
     register,
     handleSubmit,
@@ -146,41 +161,45 @@ const PredictMatch = () => {
       player: "",
       runs: "",
       wickets: "",
+      username: userState?.userInfo?.user?.username
     },
     mode: "onChange",
   });
-
   const submitHandler = async (data) => {
+    if(userState?.userInfo){
     try {
-      const formData = new FormData();
-      formData.append("predicted_winner_team", data.team);
-      formData.append("predicted_player_of_the_match", data.player);
-      formData.append("predicted_most_runs_scorer", data.runs);
-      formData.append("predicted_most_wicket_taker", data.wickets);
-
-      mutate({ match_id: match_id, formData: formData });
+      mutate({
+        predicted_winner_team: data.team,
+        predicted_player_of_the_match: data.player,
+        predicted_most_runs_scorer: data.runs,
+        predicted_most_wicket_taker: data.wickets,
+        username: userState.userInfo.user.username,
+        match_id: matchId,
+      });
     } catch (error) {
       console.error(error);
-      // Handle errors
     }
+  } else {
+    window.alert("You must be logged in")
+  }
   };
 
   return (
-    // <MainLayout>
+    <MainLayout>
       <section className="h-full ">
-        <div className="flex flex-col mt-24 justify-center items-center md:w-full lg:w-full xs:w-[90%] xs:h-fit h-fit sm:w-[100%] sm:h-fit md:h-screen lg:h-fit overflow-hidden ">
+        <div className="flex flex-col mt-[160px] justify-center items-center md:w-full lg:w-full xs:w-[90%]  overflow-hidden ">
           <div className="w-full flex justify-center items-center text-2xl mt-3 font-semibold ">
             <motion.div
               variants={slideIn("left", "spring", 0.4, 2)}
               className="flex flex-col justify-end items-center mx-4 gap-x-3 h-32"
             >
               <img
-                src={teamImages[team_a.teamname]}
+                src={teamImages[team_a?.teamname]}
                 alt=""
                 className="w-[110px] h-auto my-2"
               />
-              <p className={`text-lg text-[${teamColors[team_a.teamname]}]`}>
-                &nbsp;{team_a.teamname}
+              <p className={`text-lg text-[${teamColors[team_a?.teamname]}]`}>
+                &nbsp;{team_a?.teamname}
               </p>
             </motion.div>
             <motion.p variants={zoomIn(0.4, 1)} className="text-purple-950">
@@ -191,65 +210,17 @@ const PredictMatch = () => {
               className="flex flex-col justify-end items-center mx-4 gap-x-3 h-32"
             >
               <img
-                src={teamImages[team_b.teamname]}
+                src={teamImages[team_b?.teamname]}
                 alt=""
-                className={`${team_b.teamshortform === 'RCB' ? "w-[50px]" : "w-[110px]"} h-auto my-2`}
+                className={`${team_b?.teamname === 'Royal Challengers Bangalore' ? "w-[50px]" : "w-[110px]"} h-auto my-2`}
               />
-              <p className={`text-lg text-${teamColors[team_b.teamname]}-600`}>
-                &nbsp;{team_b.teamname}
+              <p className={`text-lg text-${teamColors[team_b?.teamname]}-600`}>
+                &nbsp;{team_b?.teamname}
               </p>
             </motion.div>
           </div>
-          <div className="mt-5 flex flex-col gap-y-4 ">
-            <div className="bg-[#eeedf0]   shadow-lg p-3 rounded-md">
-              <p className="text-left font-semibold my-2 text-xl">
-                MI Current squad
-              </p>
-              <div className="text-lg">
-                <b>Wicketkeepers:</b> Ishan Kishan, Vishnu Vinod.
-                <p>
-                  <b>Batters:</b> Rohit Sharma, Tim David (AUS), Suryakumar
-                  Yadav, N. Tilak Varma, Dewald Brevis (SA).
-                </p>{" "}
-                <p>
-                  <b>All-rounders:</b> Hardik Pandya, Romario Shepherd (WI),
-                  Nehal Wadhera, Shams Mulani, Gerald Coetzee (SA), Mohammad
-                  Nabi (AFG), Shivalik Sharma, Naman Dhir.
-                </p>{" "}
-                <p>
-                  <b>Bowlers:</b> Jasprit Bumrah, Jason Behrendorff (AUS), Kumar
-                  Kartikeya, Akash Madhwal, Arjun Tendulkar, Piyush Chawla,
-                  Dilshan Madushanka (SL), Nuwan Thushara (SL), Anshul Kamboj,
-                  Shreyas Gopal.
-                </p>
-              </div>
-            </div>
-            <div className=" p-3 rounded-md bg-[#eeedf0]   shadow-[4.0px_8.0px_8.0px_rgba(0,0,0,0.38)]">
-              <p className="text-left font-semibold my-2 text-xl">
-                CSK Current squad
-              </p>
-              <div className="text-lg">
-                <b>Wicketkeepers:</b> MS Dhoni, Devon Conway (NZ), Avanish Rao
-                Aravelly.
-                <p>
-                  <b>Batters:</b> Ruturaj Gaikwad, Shaik Rasheed, Ajinkya
-                  Rahane, Sameer Rizvi.
-                </p>{" "}
-                <p>
-                  <b>All-rounders:</b> Moeen Ali (ENG), Shivam Dube, Rajvardhan
-                  Hangargekar, Ravindra Jadeja, Mitchell Santner (NZ), Ajay
-                  Mandal, Nishant Sindhu, Rachin Ravindra (NZ), Daryl Mitchell
-                  (NZ), Shardul Thakur.
-                </p>{" "}
-                <p>
-                  <b>Bowlers:</b> Deepak Chahar, Tushar Deshpande, Matheesha
-                  Pathirana (SL), Simarjeet Singh, Prashant Solanki, Maheesh
-                  Theekshana (SL), Mustafizur Rahman (BAN), Mukesh Choudhary.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="h-fit flex flex-col justify-center items-center  max-w-4xl w-[500px]  rounded-lg  m-5">
+          
+          {!current? <div className="h-fit flex flex-col justify-center items-center  max-w-4xl w-[500px]  rounded-lg  m-5">
             <motion.p
               variants={zoomIn(0.4, 1.2)}
               className="text-2xl uppercase font-bold mt-5"
@@ -268,7 +239,7 @@ const PredictMatch = () => {
                       {...register("team", {
                         required: {
                           value: true,
-                          message: completed ? match.winnerteam : "Select team",
+                          message: completed ? data?.winner_team : "Select team",
                         },
                       })}
                       type="text"
@@ -280,16 +251,16 @@ const PredictMatch = () => {
                         Select Team
                       </option>
 
-                      <option value="1" className="text-black">
-                        {team_a.teamname}
+                      <option value={team_a?.teamname} className="text-black">
+                        {team_a?.teamname}
                       </option>
-                      <option value="2" className="text-black">
-                        {team_b.teamname}
+                      <option value={team_b?.teamname} className="text-black">
+                        {team_b?.teamname}
                       </option>
                     </select>
                   ) : (
                     <div className="form-input border-gray-400 border-2 rounded-md mt-1 text-center block w-full">
-                      {match.winnerteam}
+                      {data?.winner_team}
                     </div>
                   )}
                 </label>
@@ -322,13 +293,13 @@ const PredictMatch = () => {
                         Select Player
                       </option>
 
-                      {playerss.map((player, index) => (
-                        <option value={index}>{player.name}</option>
+                      {playerss?.map((player, index) => (
+                        <option value={player?.name}>{player?.name}</option>
                       ))}
                     </select>
                   ) : (
                     <div className="form-input border-gray-400 border-2 rounded-md mt-1 text-center block w-full">
-                      {match.playerofmatch}
+                      {data?.player_of_match}
                     </div>
                   )}
                 </label>
@@ -339,10 +310,12 @@ const PredictMatch = () => {
                 </p>
               )}
               <div>
-                <label className="flex flex-row">
-                  <span className="font-semibold w-full">Most runs scorer</span>
+              <label className="flex flex-row">
+                  <span className="font-semibold w-full">
+                    Most runs scorer
+                  </span>
                   {!completed ? (
-                    <input
+                    <select
                       {...register("runs", {
                         required: {
                           value: true,
@@ -351,12 +324,20 @@ const PredictMatch = () => {
                       })}
                       type="text"
                       name="runs"
-                      className="form-input text-center border-gray-400 border-2 rounded-md  mt-1 block w-full"
+                      className="form-input border-gray-400 border-2 rounded-md  mt-1 block w-full"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        Select batsman
+                      </option>
+
+                      {batters?.map((batter, index) => (
+                        <option value={batter?.name}>{batter?.name}</option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="form-input border-gray-400 border-2 rounded-md mt-1 text-center block w-full">
-                      {match.mostrunsplayer}
+                      {data?.most_runs_player}
                     </div>
                   )}
                 </label>
@@ -367,26 +348,34 @@ const PredictMatch = () => {
                 </p>
               )}
               <div>
-                <label className="flex flex-row">
+              <label className="flex flex-row">
                   <span className="font-semibold w-full">
-                    Most wickets taker
+                   Most wickets taker
                   </span>
                   {!completed ? (
-                    <input
+                    <select
                       {...register("wickets", {
                         required: {
                           value: true,
-                          message: "Select a",
+                          message: "Select a player",
                         },
                       })}
                       type="text"
                       name="wickets"
-                      className="form-input text-center mx-auto  border-gray-400 border-2 rounded-md mt-1 block w-full"
+                      className="form-input border-gray-400 border-2 rounded-md  mt-1 block w-full"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        Select bowler
+                      </option>
+
+                      {bowlers?.map((player, index) => (
+                        <option value={player?.name}>{player?.name}</option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="form-input border-gray-400 border-2 rounded-md mt-1 text-center block w-full">
-                      {match.mostwickettaker}
+                      {data?.most_wickets_taker}
                     </div>
                   )}
                 </label>
@@ -401,19 +390,55 @@ const PredictMatch = () => {
                 {!completed && (
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading1}
                     className="bg-[#29349e] hover:bg-[#10185c] flex mt-10 text-white font-semibold py-2 px-4 rounded-md mx-auto items-center"
                   >
-                    {isLoading ? "Adding..." : "Predict"}
+                    {isLoading1 ? "Adding..." : "Predict"}
                   </button>
                 )}
               </div>
             </form>
+          </div> : <div></div>}
+          <div className="mt-5 flex flex-col gap-y-4 ">
+            <div className="bg-[#eeedf0]   shadow-lg p-3 rounded-md">
+              <p className="text-left font-semibold my-2 text-xl">
+                 {team_a?.teamshortform} Current squad
+              </p>
+              <div className="text-lg">
+                <b>Wicketkeepers:</b>&nbsp;{teamByName?.Wicketkeepers}
+                <p>
+                  <b>Batters:</b>&nbsp;{teamByName?.Batters}
+                </p>{" "}
+                <p>
+                  <b>All-rounders:</b>&nbsp;{teamByName?.Allrounders}
+                </p>{" "}
+                <p>
+                  <b>Bowlers:</b>&nbsp;{teamByName?.Bowlers}
+                </p>
+              </div> 
+            </div>
+            <div className=" p-3 rounded-md bg-[#eeedf0]   shadow-[4.0px_8.0px_8.0px_rgba(0,0,0,0.38)]">
+              <p className="text-left font-semibold my-2 text-xl">
+                {team_b?.teamshortform} Current squad
+              </p>
+              <div className="text-lg">
+                <b>Wicketkeepers:</b>&nbsp;{teamBByName?.Wicketkeepers}
+                <p>
+                  <b>Batters:</b>&nbsp;{teamBByName?.Batters}
+                </p>{" "}
+                <p>
+                  <b>All-rounders:</b>&nbsp;{teamBByName?.Allrounders}
+                </p>{" "}
+                <p>
+                  <b>Bowlers:</b>&nbsp;{teamBByName?.Bowlers}
+                </p>
+              </div> 
+            </div>
           </div>
         </div>
       </section>
-    // </MainLayout>
+    </MainLayout>
   );
 };
 
-export default PredictMatch;
+export default SectionWrapper(PredictMatch,"PredictMatch");

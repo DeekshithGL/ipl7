@@ -10,6 +10,7 @@ import UserSubmission from "./pages/leaderboard/UserSubmission";
 // import SliderPages from "./Components/SliderPages";
 import Intro from "./pages/Homepage/Intro";
 import Authform from "./pages/Authform";
+import LeaderboardForm from "./pages/leaderboard/BoardParticipate";
 
 function App() {
   return (
@@ -26,9 +27,10 @@ function App() {
             path="/fixtures/:matchId"
             element={<PredictMatch />}
           ></Route>
+          <Route exact path="/lbparticipate" element={<LeaderboardForm/>}></Route>
           {/* <Route exact path="/profile" element={<ProfilePage />}></Route>
 
-
+          
           
          
           <Route exact path="/images" element={<SliderPages />}></Route> */}
